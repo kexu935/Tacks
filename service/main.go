@@ -23,7 +23,7 @@ const (
 	PROJECT_ID = "united-axle-194922"
 	BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://35.231.58.102:9200"
+	ES_URL = "http://35.196.173.243:9200"
 	BUCKET_NAME = "post-images-213161"
 )
 
@@ -107,6 +107,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 
 	// Some delay may range from seconds to minutes. So if you don't get enough results. Try it later.
 	searchResult, err := client.Search().
+		Size(50).
 		Index(INDEX).
 		Query(q).
 		Pretty(true).
