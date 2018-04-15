@@ -196,8 +196,8 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
 func containsFilteredWords(s *string) bool {
@@ -214,10 +214,9 @@ func containsFilteredWords(s *string) bool {
 }
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {
-	// Other codes
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+	w.Header().Set("Content-Type", "application/json")
 
 	user := r.Context().Value("user")
 	claims := user.(*jwt.Token).Claims
