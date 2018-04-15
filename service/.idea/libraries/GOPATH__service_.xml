@@ -1,19 +1,19 @@
 <component name="libraryTable">
   <library name="GOPATH &lt;service&gt;">
     <CLASSES>
-      <root url="file://$USER_HOME$/Go/src/gopkg.in" />
-      <root url="file://$USER_HOME$/Go/src/github.com" />
-      <root url="file://$USER_HOME$/Go/src/cloud.google.com" />
-      <root url="file://$USER_HOME$/Go/src/google.golang.org" />
-      <root url="file://$USER_HOME$/Go/src/golang.org" />
+      <root url="file://$USER_HOME$/go/src/gopkg.in" />
+      <root url="file://$USER_HOME$/go/src/github.com" />
+      <root url="file://$USER_HOME$/go/src/cloud.google.com" />
+      <root url="file://$USER_HOME$/go/src/google.golang.org" />
+      <root url="file://$USER_HOME$/go/src/golang.org" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="file://$USER_HOME$/Go/src/gopkg.in" />
-      <root url="file://$USER_HOME$/Go/src/github.com" />
-      <root url="file://$USER_HOME$/Go/src/cloud.google.com" />
-      <root url="file://$USER_HOME$/Go/src/google.golang.org" />
-      <root url="file://$USER_HOME$/Go/src/golang.org" />
+      <root url="file://$USER_HOME$/go/src/gopkg.in" />
+      <root url="file://$USER_HOME$/go/src/github.com" />
+      <root url="file://$USER_HOME$/go/src/cloud.google.com" />
+      <root url="file://$USER_HOME$/go/src/google.golang.org" />
+      <root url="file://$USER_HOME$/go/src/golang.org" />
     </SOURCES>
     <excluded>
       <root url="file://$PROJECT_DIR$" />
