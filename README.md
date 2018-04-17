@@ -1,5 +1,5 @@
 # Tacks: a Geo-index based Social Network
-frontend: [https://github.com/kexu935/tacks-web](https://github.com/kexu935/tacks-web)
+This repository only contains backend. Frontend is here: [https://github.com/kexu935/tacks-web](https://github.com/kexu935/tacks-web)
 * Built a social network website for users to post events (geolocation, image, description) using [ReactJs](https://reactjs.org/)
 * Designed an interactive user interfaces using ReactJS libraries (antd, react-google-map, react-grid-gallery, react-router, etc.)
 * Developed backend web service in [Go](https://golang.org/) and deployed to [Google Cloud (GAE flex)](https://cloud.google.com/appengine/docs/flexible/) for better scaling
