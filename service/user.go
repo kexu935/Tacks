@@ -27,7 +27,7 @@ func checkUser(username, password string) bool {
 		return false
 	}
 
-	// Search with a term query
+	// Search with a term query.
 	termQuery := elastic.NewTermQuery("username", username)
 	queryResult, err := es_client.Search().
 		Index(INDEX).
@@ -44,6 +44,7 @@ func checkUser(username, password string) bool {
 		u := item.(User)
 		return u.Password == password && u.Username == username
 	}
+
 	// If no user exist, return false.
 	return false
 }
@@ -63,7 +64,7 @@ func addUser(username, password string) bool {
 		Password: password,
 	}
 
-	// Search with a term query
+	// Search with a term query.
 	termQuery := elastic.NewTermQuery("username", username)
 	queryResult, err := es_client.Search().
 		Index(INDEX).
@@ -80,7 +81,7 @@ func addUser(username, password string) bool {
 		return false
 	}
 
-	// Save it to index
+	// Save it to index.
 	_, err = es_client.Index().
 		Index(INDEX).
 		Type(TYPE_USER).
@@ -119,8 +120,8 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Empty password or username", http.StatusInternalServerError)
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "text/plain")
 }
 
 
@@ -138,20 +139,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if checkUser(u.Username, u.Password) {
 		token := jwt.New(jwt.SigningMethodHS256)
 		claims := token.Claims.(jwt.MapClaims)
-		/* Set token claims */
+		// Set token claims.
 		claims["username"] = u.Username
 		claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 
-		/* Sign the token with our secret */
+		// Sign the token with our secret.
 		tokenString, _ := token.SignedString(mySigningKey)
 
-		/* Finally, write the token to the browser window */
+		// Finally, write the token to the browser window.
 		w.Write([]byte(tokenString))
 	} else {
 		fmt.Println("Invalid password or username.")
 		http.Error(w, "Invalid password or username", http.StatusForbidden)
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "text/plain")
 }

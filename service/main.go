@@ -25,7 +25,6 @@ const (
 	INDEX = "around"
 	TYPE = "post"
 	DISTANCE = "200km"
-	// Needs to update
 	// PROJECT_ID = "united-axle-194922"
 	// BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
@@ -52,7 +51,7 @@ type Post struct {
 var mySigningKey = []byte("secret")
 
 func main() {
-	// Create a client
+	// Create a ES client.
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
@@ -76,17 +75,16 @@ func main() {
                                   }
                            }
                     }
-             }
-             `
+                }`
 		_, err := client.CreateIndex(INDEX).Body(mapping).Do()
 		if err != nil {
-			// Handle error
 			panic(err)
 		}
 	}
 	fmt.Println("started-service")
-	r := mux.NewRouter()
 
+	// Here we are instantiating the gorilla/mux router.
+	r := mux.NewRouter()
 	var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 			return mySigningKey, nil
@@ -115,6 +113,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf( "Search received: %f %f %s\n", lat, lon, ran)
 
+	// Search Redis cache.
 	key := r.URL.Query().Get("lat") + ":" + r.URL.Query().Get("lon") + ":" + ran
 	if ENABLE_MEMCACHE {
 		rs_client := redis.NewClient(&redis.Options{
@@ -134,7 +133,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create a client
+	// Create a client.
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
@@ -154,7 +153,6 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		Pretty(true).
 		Do()
 	if err != nil {
-		// Handle error
 		panic(err)
 	}
 
@@ -183,6 +181,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save to Redis cache.
 	if ENABLE_MEMCACHE {
 		rs_client := redis.NewClient(&redis.Options{
 			Addr:     REDIS_URL,
@@ -190,7 +189,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 			DB:       0,  // use default DB
 		})
 
-		// Set the cache expiration to be 30 seconds
+		// Set the cache expiration to be 30 seconds.
 		err := rs_client.Set(key, string(js), time.Second*30).Err()
 		if err != nil {
 			fmt.Printf("Redis cannot save the key %s as %v.\n", key, err)
@@ -201,8 +200,9 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
+
 func containsFilteredWords(s *string) bool {
-	filteredWords := []string{
+	filteredWords := []string {
 		"fuck",
 		"shit",
 	}
@@ -251,9 +251,8 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Save to GCS.
 	ctx := context.Background()
-
-	// replace it with your real bucket name.
 	_, attrs, err := saveToGCS(ctx, file, BUCKET_NAME, id)
 	if err != nil {
 		http.Error(w, "GCS is not setup", http.StatusInternalServerError)
@@ -271,16 +270,15 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	//saveToBigTable(ctx, p, id)
 }
 
-// Save a post to ElasticSearch
 func saveToES(p *Post, id string) {
-	// Create a client
+	// Create a client.
 	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
 		return
 	}
 
-	// Save it to index
+	// Save it to index.
 	_, err = es_client.Index().
 		Index(INDEX).
 		Type(TYPE).
@@ -328,25 +326,27 @@ func saveToGCS(ctx context.Context, r io.Reader, bucketName, name string) (*stor
 	return obj, attrs, err
 }
 
-//func saveToBigTable(ctx context.Context, p *Post, id string) {
-//	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
-//	if err != nil {
-//		panic(err)
-//		return
-//	}
-//	tbl := bt_client.Open("post")
-//	mut := bigtable.NewMutation()
-//	t := bigtable.Now()
-//
-//	mut.Set("post", "user", t, []byte(p.User))
-//	mut.Set("post", "message", t, []byte(p.Message))
-//	mut.Set("location", "lat", t, []byte(strconv.FormatFloat(p.Location.Lat, 'f', -1, 64)))
-//	mut.Set("location", "lon", t, []byte(strconv.FormatFloat(p.Location.Lon, 'f', -1, 64)))
-//
-//	err = tbl.Apply(ctx, id, mut)
-//	if err != nil {
-//		panic(err)
-//		return
-//	}
-//	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
-//}
+/*
+func saveToBigTable(ctx context.Context, p *Post, id string) {
+	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
+	if err != nil {
+		panic(err)
+		return
+	}
+	tbl := bt_client.Open("post")
+	mut := bigtable.NewMutation()
+	t := bigtable.Now()
+
+	mut.Set("post", "user", t, []byte(p.User))
+	mut.Set("post", "message", t, []byte(p.Message))
+	mut.Set("location", "lat", t, []byte(strconv.FormatFloat(p.Location.Lat, 'f', -1, 64)))
+	mut.Set("location", "lon", t, []byte(strconv.FormatFloat(p.Location.Lon, 'f', -1, 64)))
+
+	err = tbl.Apply(ctx, id, mut)
+	if err != nil {
+		panic(err)
+		return
+	}
+	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
+}
+*/
