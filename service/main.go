@@ -26,12 +26,13 @@ const (
 	TYPE = "post"
 	DISTANCE = "200km"
 	// Needs to update
-	//PROJECT_ID = "united-axle-194922"
-	//BT_INSTANCE = "around-post"
+	// PROJECT_ID = "united-axle-194922"
+	// BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
 	ES_URL = "http://35.190.128.75:9200"
 	BUCKET_NAME = "post-images-213161"
 	ENABLE_MEMCACHE = false
+	// Needs to register a new Redis account
 	REDIS_URL       = "redis-16028.c9.us-east-1-2.ec2.cloud.redislabs.com:16028"
 )
 
