@@ -22,14 +22,14 @@ import (
 )
 
 const (
-	INDEX = "around"
+	INDEX = "tacks"
 	TYPE = "post"
 	DISTANCE = "200km"
-	// PROJECT_ID = "united-axle-194922"
-	// BT_INSTANCE = "around-post"
+	// PROJECT_ID = "tacks-202121"
+	// BT_INSTANCE = "tacks-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://35.196.107.49:9200"
-	BUCKET_NAME = "post-images-213161"
+	ES_URL = "http://35.224.172.109:9200"
+	BUCKET_NAME = "post-images-11111"
 	ENABLE_MEMCACHE = false
 	// Needs to register a new Redis account
 	REDIS_URL       = "redis-16028.c9.us-east-1-2.ec2.cloud.redislabs.com:16028"
