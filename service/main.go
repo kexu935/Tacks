@@ -19,19 +19,19 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/go-redis/redis"
 	"time"
-	"os"
+	//"os"
 )
 
 const (
 	INDEX = "tacks"
 	TYPE = "post"
 	DISTANCE = "200km"
-	// PROJECT_ID = "tacks-202121"
+	BIGTABLE_PROJECT_ID = "tacks-202121"
 	BT_INSTANCE = "tacks-post"
 	// Needs to update this URL if you deploy it to cloud.
 	ES_URL = "http://35.224.244.57:9200"
 	ES_LIST_SIZE = 50
-	//BUCKET_NAME = "post-images-11111"
+	GCS_BUCKET = "post-images-11111"
 	ENABLE_MEMCACHE = false
 	ENABLE_BIGTABLE = false
 	// Needs to register a new Redis account
@@ -53,8 +53,8 @@ type Post struct {
 
 var (
 	mySigningKey = []byte("secret")
-	BIGTABLE_PROJECT_ID = os.Getenv("BIG_TABLE_PROJECT_ID")
-	GCS_BUCKET          = os.Getenv("GCS_BUCKET")
+	//BIGTABLE_PROJECT_ID = os.Getenv("BIG_TABLE_PROJECT_ID")
+	//GCS_BUCKET          = os.Getenv("GCS_BUCKET")
 
 )
 func main() {
