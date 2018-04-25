@@ -12,13 +12,14 @@ import (
 	"context"
 	"cloud.google.com/go/storage"
 	"io"
-	//"cloud.google.com/go/bigtable"
+	"cloud.google.com/go/bigtable"
 	"strings"
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/go-redis/redis"
 	"time"
+	"os"
 )
 
 const (
@@ -26,11 +27,13 @@ const (
 	TYPE = "post"
 	DISTANCE = "200km"
 	// PROJECT_ID = "tacks-202121"
-	// BT_INSTANCE = "tacks-post"
+	BT_INSTANCE = "tacks-post"
 	// Needs to update this URL if you deploy it to cloud.
 	ES_URL = "http://35.224.244.57:9200"
-	BUCKET_NAME = "post-images-11111"
+	ES_LIST_SIZE = 50
+	//BUCKET_NAME = "post-images-11111"
 	ENABLE_MEMCACHE = false
+	ENABLE_BIGTABLE = false
 	// Needs to register a new Redis account
 	REDIS_URL       = "redis-16028.c9.us-east-1-2.ec2.cloud.redislabs.com:16028"
 )
@@ -48,8 +51,12 @@ type Post struct {
 	Url	string `json:"url"`
 }
 
-var mySigningKey = []byte("secret")
+var (
+	mySigningKey = []byte("secret")
+	BIGTABLE_PROJECT_ID = os.Getenv("BIG_TABLE_PROJECT_ID")
+	GCS_BUCKET          = os.Getenv("GCS_BUCKET")
 
+)
 func main() {
 	// Create a ES client.
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
@@ -81,7 +88,7 @@ func main() {
 			panic(err)
 		}
 	}
-	fmt.Println("started-service")
+	fmt.Println("Started service successfully")
 
 	// Here we are instantiating the gorilla/mux router.
 	r := mux.NewRouter()
@@ -92,10 +99,10 @@ func main() {
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
-	r.Handle("/post", jwtMiddleware.Handler(http.HandlerFunc(handlerPost))).Methods("POST")
-	r.Handle("/search", jwtMiddleware.Handler(http.HandlerFunc(handlerSearch))).Methods("GET")
-	r.Handle("/login", http.HandlerFunc(loginHandler)).Methods("POST")
-	r.Handle("/signup", http.HandlerFunc(signupHandler)).Methods("POST")
+	r.Handle("/post", jwtMiddleware.Handler(http.HandlerFunc(handlerPost)))
+	r.Handle("/search", jwtMiddleware.Handler(http.HandlerFunc(handlerSearch)))
+	r.Handle("/login", http.HandlerFunc(loginHandler))
+	r.Handle("/signup", http.HandlerFunc(signupHandler))
 
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -105,6 +112,12 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Received one request for search")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+
+	if r.Method != "GET" {
+		return
+	}
+
 	lat, _ := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
 	lon, _ := strconv.ParseFloat(r.URL.Query().Get("lon"), 64)
 
@@ -129,7 +142,6 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Redis cannot find the key %s as %v.\n", key, err)
 		} else {
 			fmt.Printf("Redis find the key %s.\n", key)
-			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(val))
 			return
 		}
@@ -138,7 +150,8 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	// Create a client.
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
-		panic(err)
+		http.Error(w, "ES is not setup", http.StatusInternalServerError)
+		fmt.Printf("ES is not setup %v\n", err)
 		return
 	}
 
@@ -149,13 +162,16 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 
 	// Some delay may range from seconds to minutes. So if you don't get enough results. Try it later.
 	searchResult, err := client.Search().
-		Size(50).
+		Size(ES_LIST_SIZE).
 		Index(INDEX).
 		Query(q).
 		Pretty(true).
 		Do()
 	if err != nil {
-		panic(err)
+		// Handle error
+		m := fmt.Sprintf("Failed to search ES %v", err)
+		fmt.Println(m)
+		http.Error(w, m, http.StatusInternalServerError)
 	}
 
 	// searchResult is of type SearchResult and returns hits, suggestions,
@@ -179,7 +195,9 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	js, err := json.Marshal(ps)
 	if err != nil {
-		panic(err)
+		m := fmt.Sprintf("Failed to parse post object %v", err)
+		fmt.Println(m)
+		http.Error(w, m, http.StatusInternalServerError)
 		return
 	}
 
@@ -215,11 +233,21 @@ func containsFilteredWords(s *string) bool {
 }
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
-	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != "POST" {
+		return
+	}
 
 	user := r.Context().Value("user")
+	if user == nil {
+		m := fmt.Sprintf("Unable to find user in context")
+		fmt.Println(m)
+		http.Error(w, m, http.StatusBadRequest)
+		return
+	}
 	claims := user.(*jwt.Token).Claims
 	username := claims.(jwt.MapClaims)["username"]
 
@@ -249,11 +277,11 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Image is not available %v.\n", err)
 		return
 	}
+	ctx := context.Background()
 	defer file.Close()
 
 	// Save to GCS.
-	ctx := context.Background()
-	_, attrs, err := saveToGCS(ctx, file, BUCKET_NAME, id)
+	_, attrs, err := saveToGCS(ctx, file, GCS_BUCKET, id)
 	if err != nil {
 		http.Error(w, "GCS is not setup", http.StatusInternalServerError)
 		fmt.Printf("GCS is not setup %v\n", err)
@@ -264,10 +292,12 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	p.Url = attrs.MediaLink
 
 	// Save to ES.
-	saveToES(p, id)
+	go saveToES(p, id)
 
 	// Save to BigTable.
-	//saveToBigTable(ctx, p, id)
+	if ENABLE_BIGTABLE {
+		go saveToBigTable(p, id)
+	}
 }
 
 func saveToES(p *Post, id string) {
@@ -326,9 +356,9 @@ func saveToGCS(ctx context.Context, r io.Reader, bucketName, name string) (*stor
 	return obj, attrs, err
 }
 
-/*
-func saveToBigTable(ctx context.Context, p *Post, id string) {
-	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
+func saveToBigTable(p *Post, id string) {
+	ctx := context.Background()
+	bt_client, err := bigtable.NewClient(ctx, BIGTABLE_PROJECT_ID, BT_INSTANCE)
 	if err != nil {
 		panic(err)
 		return
@@ -349,4 +379,4 @@ func saveToBigTable(ctx context.Context, p *Post, id string) {
 	}
 	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
 }
-*/
+

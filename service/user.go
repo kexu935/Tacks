@@ -105,7 +105,9 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var u User
 	if err := decoder.Decode(&u); err != nil {
-		panic(err)
+		m := fmt.Sprintf("Failed to parse body %v", r.Body)
+		fmt.Println(m)
+		http.Error(w, m, http.StatusBadRequest)
 		return
 	}
 
@@ -133,7 +135,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var u User
 	if err := decoder.Decode(&u); err != nil {
-		panic(err)
+		m := fmt.Sprintf("Failed to parse body %v", r.Body)
+		fmt.Println(m)
+		http.Error(w, m, http.StatusBadRequest)
 		return
 	}
 
