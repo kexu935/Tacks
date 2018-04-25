@@ -28,7 +28,7 @@ const (
 	// PROJECT_ID = "tacks-202121"
 	// BT_INSTANCE = "tacks-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://35.224.172.109:9200"
+	ES_URL = "http://35.224.244.57:9200"
 	BUCKET_NAME = "post-images-11111"
 	ENABLE_MEMCACHE = false
 	// Needs to register a new Redis account
